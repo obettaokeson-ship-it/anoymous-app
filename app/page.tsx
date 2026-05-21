@@ -1,161 +1,134 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
 import {
-  getFirestore,
   collection,
   addDoc,
   onSnapshot,
-  deleteDoc,
-  doc,
+  getFirestore,
 } from "firebase/firestore";
+import { initializeApp } from "firebase/app";
 
-import app from "../firebase";
+// Paste your real Firebase config here
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+};
 
+const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 export default function Home() {
-
+  const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
 
   useEffect(() => {
-
-    const unsubscribe = onSnapshot(
-      collection(db, "messages"),
-      (snapshot) => {
-
-        const msgs: any[] = [];
-
-        snapshot.forEach((document) => {
-
-          msgs.push({
-            id: document.id,
-            ...document.data(),
-          });
-
-        });
-
-        setMessages(msgs);
-      }
-    );
+    const unsubscribe = onSnapshot(collection(db, "message"), (snapshot) => {
+      const msgs: any[] = [];
+      snapshot.forEach((doc) => {
+        msgs.push({ id: doc.id, ...doc.data() });
+      });
+      setMessages(msgs);
+    });
 
     return () => unsubscribe();
-
   }, []);
 
   const sendMessage = async () => {
+    if (message.trim() === "") return;
 
-    if (message === "") {
-      alert("Please type a message");
-      return;
-    }
+    await addDoc(collection(db, "message"), {
+      name: name || "Anonymous",
+      message: message,
+      createdAt: new Date(),
+    });
 
-    try {
-
-      await addDoc(collection(db, "messages"), {
-        text: message,
-        createdAt: new Date(),
-      });
-
-      alert("Anonymous message sent 🚀");
-
-      setMessage("");
-
-    } catch (error) {
-
-      alert("Error sending message");
-
-    }
-  };
-
-  const deleteMessage = async (id: string) => {
-
-    await deleteDoc(doc(db, "messages", id));
-
+    setMessage("");
+    setName("");
   };
 
   return (
     <div
       style={{
-        textAlign: "center",
-        padding: "40px",
-        fontFamily: "Arial",
-        backgroundColor: "#0f172a",
         minHeight: "100vh",
+        background: "#111",
         color: "white",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        paddingTop: "40px",
       }}
     >
-      <h1>Anonymous Message App 🚀</h1>
+      <h1>Anonymous Messages</h1>
 
-      <p>Send anonymous messages to your friends</p>
+      <input
+        type="text"
+        placeholder="Your name (optional)"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        style={{
+          padding: "10px",
+          width: "300px",
+          marginBottom: "10px",
+          borderRadius: "5px",
+          border: "none",
+        }}
+      />
 
-      <div style={{ marginTop: "30px" }}>
-        <input
-          type="text"
-          placeholder="Type your anonymous message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          style={{
-            padding: "12px",
-            width: "300px",
-            borderRadius: "8px",
-            border: "1px solid gray",
-            backgroundColor: "#1e293b",
-            color: "white",
-          }}
-        />
+      <input
+        type="text"
+        placeholder="Enter message"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        style={{
+          padding: "10px",
+          width: "300px",
+          borderRadius: "5px",
+          border: "none",
+        }}
+      />
 
-        <br />
-        <br />
+      <button
+        onClick={sendMessage}
+        style={{
+          marginTop: "10px",
+          padding: "10px 20px",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+          backgroundColor: "#2563eb",
+          color: "white",
+        }}
+      >
+        Send
+      </button>
 
-        <button
-          onClick={sendMessage}
-          style={{
-            padding: "12px 20px",
-            backgroundColor: "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
-        >
-          Send Message
-        </button>
-      </div>
-
-      <div style={{ marginTop: "40px" }}>
-        <h2>Anonymous Messages</h2>
-
-        {messages.map((msg: any, index) => (
+      <div
+        style={{
+          height: "400px",
+          overflowY: "auto",
+          marginTop: "20px",
+          width: "300px",
+        }}
+      >
+        {messages.map((msg: any, index: number) => (
           <div
             key={index}
             style={{
-              background: "#1f1f1f",
+              marginTop: "10px",
+              padding: "8px",
+              backgroundColor: "#222",
+              borderRadius: "5px",
               color: "white",
-              padding: "10px",
-              margin: "10px auto",
-              width: "300px",
-              borderRadius: "8px",
             }}
           >
-            <div>{msg.text}</div>
-
-            <button
-              onClick={() => deleteMessage(msg.id)}
-              style={{
-                marginTop: "10px",
-                padding: "6px 10px",
-                backgroundColor: "red",
-                color: "white",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              Delete
-            </button>
+            <h3 style={{ margin: "0 0 5px 0" }}>{msg.name}</h3>
+            <p style={{ margin: 0 }}>{msg.message}</p>
           </div>
         ))}
       </div>
