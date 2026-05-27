@@ -17,9 +17,9 @@ export default async function UserPage({
     >
       <h1>Send Anonymous Message</h1>
 
-      <h2>Douglas</h2>
+      <h2>{user}</h2>
 
-      <p>This page belongs to Douglas</p>
+      <p>This page belongs to {user}</p>
     </div>
   );
 }
